@@ -1,90 +1,130 @@
-function signals=extractSignals3D(expName,alignfile,segmentfile,daqfile,FPT,filedir,rect,includeTifs);
-%% Attempt at average movie
-%clear all; close all force;
-%expName='ExpA_20160824.mat';
+function Signals=extractSignals3D(expName,alignfile,filedir);
 
-disp('Loading Align file')
-load(alignfile,'-mat');
-disp('Loading Segment File')
-load(segmentfile,'-mat');
-disp('Loading DAQ file')
-load(daqfile);
-close all force;
-hCellVersion=1;  %or 2
-
-%FPT=390;
-k=filedir;  %('Z:\amardinly\Imaging\5390\20160824\FOV1\')  ;%path to actual movies
-savename=[filedir expName '.mat'];
+savename=[expName '.mat'];
 
 
-%ROIdata=ExpStruct.Holo.ROIdata;
-%save('FOV1_Rois','ROIdata')
-%ROIanalysis
-%rect=[38 4 431 503];
-disp('Extractin ROIs and neuropil')
-if ~exist('ROIs')
-ROIs = makeROI(mask,dim,rect);
+for j=1:numel(alignfile);
+    disp(['Loading Align file ' num2str(j)])
+    load(alignfile{j},'-mat');
+    [NPM] = createNPmask(rois);  
+    
+    %store rois in vectorized form
+    Depth{j}.ROIs=logical(reshape(rois,[512*512 size(rois,3)]));
+    Depth{j}.NPM=logical(reshape(NPM,[512*512 size(rois,3)]));
+    Depth{j}.meanImg=m;
+    Depth{j}.T=T;
+    Depth{j}.c3=c3;
+end
+
+%% BEGIN SIGNAL PROCESSING
+disp('Processing Signals')
+
+
+
+IMGFILES=dir(filedir);
+i=1;
+toDel=[];
+for n =1:numel(IMGFILES)
+    if isempty(strfind(IMGFILES(n).name,'.tif'))
+        toDel(i)=n;
+        i=i+1;
+    end;
+end;
+IMGFILES(toDel)=[];
+
+totalcount=0;
+for n = 1:length(IMGFILES);
+    disp(['Loading file ' num2str(n)]);
+    %load files
+    tic
+    
+    [data] = ScanImageTiffReader([filedir IMGFILES(1).name]).data();
+    if n ==1;
+    MD = ScanImageTiffReader([filedir IMGFILES(1).name]).metadata();
+    SI=parseSI5Header(MD);
+    end
+    
+    g=data(:,:,1:2:end);
+    r=data(:,:,2:2:end);
+    
+       
+   
+            
+    
+    %apply motion correction
+    
+    for j=1:numel(Depth);
+       gi=g(:,:,j:(numel(Depth)):end); %exptract depth information
+       ri=r(:,:,j:(numel(Depth)):end);
+        
+        T=Depth{j}.T;
+        for frame=1:(size(gi,3));
+        mcg(:,:,frame)=circshift(gi(:,:,frame),T(frame+totalcount,:));
+        mcr(:,:,frame)=circshift(ri(:,:,frame),T(frame+totalcount,:));
+        end;  
+   
+        %save MC mean images in both channels
+        Depth{j}.meanGreen(:,:,n)=(mean(mcg,3));
+        Depth{j}.meanRed(:,:,n)=(mean(mcr,3));
+   
+   
+        %vectorize
+        mcg=reshape(mcg,[512*512 frame]);
+        mcg=double(mcg);
+        
+        mcr=reshape(mcr,[512*512 frame]);
+        mcr=double(mcr);
+        
+        
+        %extract signals        
+        for ro=1:size(Depth{j}.ROIs,2);
+                
+                g_s=mean(mcg(find(Depth{j}.ROIs(:,ro)==1),:));
+                r_s=mean(mcr(find(Depth{j}.ROIs(:,ro)==1),:));
+                
+                g_nps=mean(mcg(find(Depth{j}.NPM(:,ro)==1),:));
+                r_nps=mean(mcr(find(Depth{j}.NPM(:,ro)==1),:));
+
+                
+                Depth{j}.green_data(ro,totalcount+1:totalcount+frame)=g_s;
+                Depth{j}.red_data(ro,totalcount+1:totalcount+frame)=r_s;  
+                
+                Depth{j}.green_npdata(ro,totalcount+1:totalcount+frame)=g_s;
+                Depth{j}.red_npdata(ro,totalcount+1:totalcount+frame)=r_s;     
+        end        
+
+    
+    clear mcg mcr
+    end
+    
+    
+    
+    %% update total count
+    totalcount=totalcount+(size(gi,3));  %update total count for T vector
+    toc
 end
 
 
-%imagesc(sum(ROIs,3))
-
-%if stimROIs
-%[ROIs] = orderROIs(ROIs,ExpStruct);
-%else
-%[ROIs] = killStimROIs(ROIs,ExpStruct);    
-%end
-
-[NPM] = createNPmask(ROIs,rect);
-%last ROI is goin to be a strip on the left to catch stim artifacts to help
-%fight off by n errors!
-
-
-
-%disp('added align ROI')
-%s=size(ROIs,3);
-%for j=1:5
-%ROIs(:,:,s+j)=zeros([size(ROIs,1) size(ROIs,2)]);
-%ROIs(1:512,((100*j)-99):(100*j),s+j)=1;
-%NPM(:,:,s+j)=zeros([size(ROIs,1) size(ROIs,2)]);
-%end;
-
-%%
-disp('Processing Signals')
-
-[signals]= extractSignals4(ROIs,NPM,k,FPT,T,includeTifs);
-
-
-pq=1; roiDel=[];
-%assign red value to ROIs
-for j=1:numel(signals.rois);
+%reshape rois and masks 
+for j=1:numel(alignfile);
+  
+    A=Depth{j}.ROIs;
+    Depth{j}.ROIs=reshape(A,[512 512 size(A,2)]);
     
-    signals.rois(j).redvalue=mean(signals.rois(j).redSweeps(:));
-    
-    a=bwconncomp(ROIs(:,:,j));
-    r=regionprops(a);
-    
-    if isempty(a.PixelIdxList)
-        roiDel(pq)=j;
-        pq=pq+1;
-        signals.rois(j).centroid=0;
-    signals.rois(j).area=0;
-    else
-        
-    
-    signals.rois(j).centroid=r.Centroid;
-    signals.rois(j).area=r.Area;
-    
-    end
-end;
+    A=Depth{j}.NPM;
+    Depth{j}.NPM=reshape(A,[512 512 size(A,2)]);
+  
+end
 
-signals.rois(roiDel)=[];
+for j=1:numel(Depth);
+    
+    Signals(j).Depths=Depth{j};
+end
 
-save(savename);
-save(savename,'ROIs','-append');
-save(savename,'k','-append');
-save(savename,'FPT','-append');
-save(savename,'T','-append');
-save(savename,'rect','-append');
+Signals(1).MD=MD;
+
+disp('Saving Work')
+save(savename,'Signals','-v7.3')
+
 
 
