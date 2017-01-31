@@ -37,17 +37,22 @@ if isempty(basename)
     end;
     IMGFILES(toDel)=[];
 else
-    k=dir(path);k(1:2)=[];
+    k=dir(filedir);k(1:2)=[];
+    IMGFILES=k;
     i=1;
+    toDel=[];
     for n=1:(numel(k))
         fn=k(n).name;
         if regexp(fn,regexptranslate('wildcard',[basename '*.tif']))
-            IMGFILES{i}=fullfile(path,  k(n).name);
+            fileList{i}=fullfile(path,  k(n).name);
+        else
+            toDel(i)=n;%IMGFILES{i}=fullfile(path,  k(n).name);
             i=i+1;
         end;
     end;
-    nn = loadStart:(numToLoad+loadStart-1);
-    IMGFILES=IMGFILES(nn);
+    IMGFILES(toDel)=[];
+%     nn = loadStart:(numToLoad+loadStart-1);
+%     IMGFILES=IMGFILES(nn);
 end
 fprintf([ num2str(numel(IMGFILES)) ' Files Detected... \n']);
 
@@ -55,7 +60,7 @@ totalcount=0;
 for n = 1:length(IMGFILES);
     disp(['Loading file ' num2str(n)]);
     %load files
-    tic
+    loadTic = tic
     
     [data] = ScanImageTiffReader([filedir IMGFILES(1).name]).data();
     if n ==1;
@@ -120,7 +125,7 @@ for n = 1:length(IMGFILES);
     
     %% update total count
     totalcount=totalcount+(size(gi,3));  %update total count for T vector
-    toc
+    toc(loadTic)
 end
 
 
