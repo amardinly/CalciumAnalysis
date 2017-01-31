@@ -1,4 +1,9 @@
-function Signals=extractSignals3D(expName,alignfile,filedir);
+function Signals=extractSignals3D(expName,alignfile,filedir,basename);
+
+if nargin<4
+    basename='';
+end
+
 
 savename=[expName '.mat'];
 
@@ -19,18 +24,32 @@ end
 %% BEGIN SIGNAL PROCESSING
 disp('Processing Signals')
 
-
-
-IMGFILES=dir(filedir);
-i=1;
-toDel=[];
-for n =1:numel(IMGFILES)
-    if isempty(strfind(IMGFILES(n).name,'.tif'))
-        toDel(i)=n;
-        i=i+1;
+fprintf('Identifying Files... \n');
+if isempty(basename)
+    IMGFILES=dir(filedir);
+    i=1;
+    toDel=[];
+    for n =1:numel(IMGFILES)
+        if isempty(strfind(IMGFILES(n).name,'.tif'))
+            toDel(i)=n;
+            i=i+1;
+        end;
     end;
-end;
-IMGFILES(toDel)=[];
+    IMGFILES(toDel)=[];
+else
+    k=dir(path);k(1:2)=[];
+    i=1;
+    for n=1:(numel(k))
+        fn=k(n).name;
+        if regexp(fn,regexptranslate('wildcard',[basename '*.tif']))
+            IMGFILES{i}=fullfile(path,  k(n).name);
+            i=i+1;
+        end;
+    end;
+    nn = loadStart:(numToLoad+loadStart-1);
+    IMGFILES=IMGFILES(nn);
+end
+fprintf([ num2str(numel(IMGFILES)) ' Files Detected... \n']);
 
 totalcount=0;
 for n = 1:length(IMGFILES);
@@ -40,8 +59,8 @@ for n = 1:length(IMGFILES);
     
     [data] = ScanImageTiffReader([filedir IMGFILES(1).name]).data();
     if n ==1;
-    MD = ScanImageTiffReader([filedir IMGFILES(1).name]).metadata();
-    SI=parseSI5Header(MD);
+        MD = ScanImageTiffReader([filedir IMGFILES(1).name]).metadata();
+        SI=parseSI5Header(MD);
     end
     
     g=data(:,:,1:2:end);
