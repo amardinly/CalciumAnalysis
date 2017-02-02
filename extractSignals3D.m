@@ -1,6 +1,6 @@
-function Signals=extractSignals3D(expName,alignfile,filedir,basename);
+function Signals=extractSignals3D(expName,alignfile,segmentfile,filedir,basename);
 
-if nargin<4
+if nargin<5
     basename='';
 end
 
@@ -11,11 +11,22 @@ savename=[expName '.mat'];
 for j=1:numel(alignfile);
     disp(['Loading Align file ' num2str(j)])
     load(alignfile{j},'-mat');
-    [NPM] = createNPmask(rois);  
+    load(segmentfile{j},'-mat');
+    
+    %extract rois, fit into 512 512 and re-linearize
+    rois=full(mask);
+    rois=reshape(rois,[size(m) size(rois,2)]);
+    
+    R=zeros(512,512,size(rois,3));
+    
+    R(hi{j},wi{j},:)=rois;
+    
+    
+    [NPM] = createNPmask(R);  
     
     %store rois in vectorized form
-    Depth{j}.ROIs=logical(reshape(rois,[512*512 size(rois,3)]));
-    Depth{j}.NPM=logical(reshape(NPM,[512*512 size(rois,3)]));
+    Depth{j}.ROIs=logical(reshape(R,[512*512 size(R,3)]));
+    Depth{j}.NPM=logical(reshape(NPM,[512*512 size(R,3)]));
     Depth{j}.meanImg=m;
     Depth{j}.T=T;
     Depth{j}.c3=c3;

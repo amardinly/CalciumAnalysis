@@ -1,7 +1,8 @@
-function Signals=extractSignals3D(expName,alignfile,filedir,basename);
+function Signals=extractSignals3D(expName,alignfile,segmentfile,filedir,basename);
 
-if nargin<4
-    basename=''
+if nargin<5
+    basename='';
+end
 
 
 savename=[expName '.mat'];
@@ -10,6 +11,15 @@ savename=[expName '.mat'];
 for j=1:numel(alignfile);
     disp(['Loading Align file ' num2str(j)])
     load(alignfile{j},'-mat');
+    load(segmentfile{j},'-mat');
+    
+    %extract rois, fit into 512 512 and re-linearize
+    rois=full(mask);
+    rois=reshape(rois,[size(m) size(rois,2)]);
+    
+    E
+    
+    
     [NPM] = createNPmask(rois);  
     
     %store rois in vectorized form
@@ -36,17 +46,22 @@ if isempty(basename)
     end;
     IMGFILES(toDel)=[];
 else
-    k=dir(path);k(1:2)=[];
+    k=dir(filedir);k(1:2)=[];
+    IMGFILES=k;
     i=1;
+    toDel=[];
     for n=1:(numel(k))
         fn=k(n).name;
         if regexp(fn,regexptranslate('wildcard',[basename '*.tif']))
-            IMGFILES{i}=fullfile(path,  k(n).name);
+            fileList{i}=fullfile(path,  k(n).name);
+        else
+            toDel(i)=n;%IMGFILES{i}=fullfile(path,  k(n).name);
             i=i+1;
         end;
     end;
-    nn = loadStart:(numToLoad+loadStart-1);
-    IMGFILES=IMGFILES(nn);
+    IMGFILES(toDel)=[];
+%     nn = loadStart:(numToLoad+loadStart-1);
+%     IMGFILES=IMGFILES(nn);
 end
 fprintf([ num2str(numel(IMGFILES)) ' Files Detected... \n']);
 
@@ -54,7 +69,7 @@ totalcount=0;
 for n = 1:length(IMGFILES);
     disp(['Loading file ' num2str(n)]);
     %load files
-    tic
+    loadTic = tic;
     
     [data] = ScanImageTiffReader([filedir IMGFILES(1).name]).data();
     if n ==1;
@@ -97,18 +112,18 @@ for n = 1:length(IMGFILES);
         %extract signals        
         for ro=1:size(Depth{j}.ROIs,2);
                 
-                g_s=mean(mcg(find(Depth{j}.ROIs(:,ro)==1),:));
-                r_s=mean(mcr(find(Depth{j}.ROIs(:,ro)==1),:));
+                g_s=mean(mcg(Depth{j}.ROIs(:,ro)==1,:));
+                r_s=mean(mcr(Depth{j}.ROIs(:,ro)==1,:));
                 
-                g_nps=mean(mcg(find(Depth{j}.NPM(:,ro)==1),:));
-                r_nps=mean(mcr(find(Depth{j}.NPM(:,ro)==1),:));
+                g_nps=mean(mcg(Depth{j}.NPM(:,ro)==1,:));
+                r_nps=mean(mcr(Depth{j}.NPM(:,ro)==1,:));
 
                 
                 Depth{j}.green_data(ro,totalcount+1:totalcount+frame)=g_s;
                 Depth{j}.red_data(ro,totalcount+1:totalcount+frame)=r_s;  
                 
-                Depth{j}.green_npdata(ro,totalcount+1:totalcount+frame)=g_s;
-                Depth{j}.red_npdata(ro,totalcount+1:totalcount+frame)=r_s;     
+                Depth{j}.green_npdata(ro,totalcount+1:totalcount+frame)=g_nps;
+                Depth{j}.red_npdata(ro,totalcount+1:totalcount+frame)=r_nps;     
         end        
 
     
@@ -119,7 +134,7 @@ for n = 1:length(IMGFILES);
     
     %% update total count
     totalcount=totalcount+(size(gi,3));  %update total count for T vector
-    toc
+    toc(loadTic)
 end
 
 
