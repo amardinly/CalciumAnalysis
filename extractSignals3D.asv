@@ -1,8 +1,7 @@
 function Signals=extractSignals3D(expName,alignfile,filedir,basename);
 
 if nargin<4
-    basename='';
-end
+    basename=''
 
 
 savename=[expName '.mat'];
@@ -37,22 +36,17 @@ if isempty(basename)
     end;
     IMGFILES(toDel)=[];
 else
-    k=dir(filedir);k(1:2)=[];
-    IMGFILES=k;
+    k=dir(path);k(1:2)=[];
     i=1;
-    toDel=[];
     for n=1:(numel(k))
         fn=k(n).name;
         if regexp(fn,regexptranslate('wildcard',[basename '*.tif']))
-            fileList{i}=fullfile(path,  k(n).name);
-        else
-            toDel(i)=n;%IMGFILES{i}=fullfile(path,  k(n).name);
+            IMGFILES{i}=fullfile(path,  k(n).name);
             i=i+1;
         end;
     end;
-    IMGFILES(toDel)=[];
-%     nn = loadStart:(numToLoad+loadStart-1);
-%     IMGFILES=IMGFILES(nn);
+    nn = loadStart:(numToLoad+loadStart-1);
+    IMGFILES=IMGFILES(nn);
 end
 fprintf([ num2str(numel(IMGFILES)) ' Files Detected... \n']);
 
@@ -60,7 +54,7 @@ totalcount=0;
 for n = 1:length(IMGFILES);
     disp(['Loading file ' num2str(n)]);
     %load files
-    loadTic = tic
+    tic
     
     [data] = ScanImageTiffReader([filedir IMGFILES(1).name]).data();
     if n ==1;
@@ -125,7 +119,7 @@ for n = 1:length(IMGFILES);
     
     %% update total count
     totalcount=totalcount+(size(gi,3));  %update total count for T vector
-    toc(loadTic)
+    toc
 end
 
 
