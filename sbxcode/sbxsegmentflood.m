@@ -22,7 +22,7 @@ function varargout = sbxsegmentflood(varargin)
 
 % Edit the above text to modify the response to help sbxsegmentflood
 
-% Last Modified by GUIDE v2.5 01-Feb-2017 16:18:18
+% Last Modified by GUIDE v2.5 01-Feb-2017 17:08:50
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -300,6 +300,24 @@ function figure1_KeyPressFcn(hObject, eventdata, handles)
 %	Modifier: name(s) of the modifier key(s) (i.e., control, shift) pressed
 % handles    structure with handles and user data (see GUIDATA)
 
+switch eventdata.Key
+    case 'f'
+        %flood fill
+        ffbtn_Callback(handles.ffbtn,eventdata, handles);
+    case 'e'
+        %elipse
+        polygonbtn_Callback(handles.polygonbtn);
+    case 'p'
+        disp('p')
+        EllipseButton_Callback(handles.EllipseButton);
+        %polygon --yes i know it says Elipse i don't know why but i don't
+        %ask questions
+    case 'u'
+        undobtn_Callback(handles.undobtn,eventdata, handles);
+        %undo
+end
+
+
 
 
 % --- Executes on key press with focus on figure1 or any of its controls.
@@ -310,6 +328,7 @@ function figure1_WindowKeyPressFcn(hObject, eventdata, handles)
 %	Character: character interpretation of the key(s) that was pressed
 %	Modifier: name(s) of the modifier key(s) (i.e., control, shift) pressed
 % handles    structure with handles and user data (see GUIDATA)
+disp('la')
 
 
 % --- Executes on button press in pushbutton6.
@@ -700,3 +719,13 @@ drawbgim(handles)
     refresh_stats(handles);
 % Hint: get(hObject,'Value') returns toggle state of hiderois
 %drawfgim(handles);
+
+
+% --- Executes on key press with focus on ffbtn and none of its controls.
+function ffbtn_KeyPressFcn(hObject, eventdata, handles)
+% hObject    handle to ffbtn (see GCBO)
+% eventdata  structure with the following fields (see MATLAB.UI.CONTROL.UICONTROL)
+%	Key: name of the key that was pressed, in lower case
+%	Character: character interpretation of the key(s) that was pressed
+%	Modifier: name(s) of the modifier key(s) (i.e., control, shift) pressed
+% handles    structure with handles and user data (see GUIDATA)
