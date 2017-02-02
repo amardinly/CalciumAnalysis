@@ -22,7 +22,7 @@ function varargout = sbxsegmentflood(varargin)
 
 % Edit the above text to modify the response to help sbxsegmentflood
 
-% Last Modified by GUIDE v2.5 04-Oct-2014 17:05:05
+% Last Modified by GUIDE v2.5 01-Feb-2017 16:18:18
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -90,7 +90,7 @@ function loadbtn_Callback(hObject, eventdata, handles)
     plist = {};
     h = [];
     
-    [fn,pathname] = uigetfile('*.align','Choose ''.align'' file', 'C:\Users\Adesnik\Documents\MATLAB\');
+    [fn,pathname] = uigetfile('*.align');
     fn = [pathname fn];
     
     text(0.5,0.5,'loading...');
@@ -365,9 +365,9 @@ dim = handles.dim;
 %         vert{ii} = [];
 %     end
 % end
-[path, name, ext] = fileparts(handles.fn);
-save(fullfile(path,[name '.segment']),'mask','dim','-mat','-v7.3');
-fprintf(['Saved segments: ' fullfile(path,[name '.segment']) ' \n']);
+
+save([strtok(handles.fn,'.') '.segment'],'mask','dim','-mat','-v7.3');
+fprintf('Saved segments\n');
 
 
 % --- Executes during object creation, after setting all properties.
@@ -624,3 +624,79 @@ function hiderois_Callback(hObject, eventdata, handles)
 
 % Hint: get(hObject,'Value') returns toggle state of hiderois
 drawfgim(handles);
+
+function polygonbtn_Callback(hObject, eventdata, handles)
+% hObject    handle to hiderois (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+  handles = guidata(hObject);
+
+  zoom off
+pan off
+handles.xraypoint = [];
+set(handles.xraychk,'Value',0)
+guidata(hObject, handles);
+drawbgim(handles)
+  
+  
+     H=imellipse;
+     newmask = createMask(H,handles.im_mask);
+     H.delete;
+     
+     if handles.current>size(handles.mask,2)
+        handles.mask = cat(2, handles.mask, sparse(prod(handles.dim), 100));
+     end
+    
+    handles.mask(:,handles.current) = newmask(:);
+    handles.current = handles.current + 1;
+    
+    handles.floodcenter = [];
+    guidata(hObject,handles);
+    drawfgim(handles);
+    drawfloodim(handles);
+    set(handles.xraychk,'Value',0)
+
+    set(handles.im_flood,'Visible','off');
+    
+    refresh_stats(handles);
+% Hint: get(hObject,'Value') returns toggle state of hiderois
+%drawfgim(handles);
+
+
+% --- Executes on button press in EllipseButton.
+function EllipseButton_Callback(hObject, eventdata, handles)
+% hObject    handle to EllipseButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+ handles = guidata(hObject);
+
+  zoom off
+pan off
+handles.xraypoint = [];
+set(handles.xraychk,'Value',0)
+guidata(hObject, handles);
+drawbgim(handles)
+  
+  
+     H=impoly;
+     newmask = createMask(H,handles.im_mask);
+     H.delete;
+     
+     if handles.current>size(handles.mask,2)
+        handles.mask = cat(2, handles.mask, sparse(prod(handles.dim), 100));
+     end
+    
+    handles.mask(:,handles.current) = newmask(:);
+    handles.current = handles.current + 1;
+    
+    handles.floodcenter = [];
+    guidata(hObject,handles);
+    drawfgim(handles);
+    drawfloodim(handles);
+    set(handles.xraychk,'Value',0)
+
+    set(handles.im_flood,'Visible','off');
+    
+    refresh_stats(handles);
+% Hint: get(hObject,'Value') returns toggle state of hiderois
+%drawfgim(handles);
