@@ -60,7 +60,7 @@ totalcount=0;
 for n = 1:length(IMGFILES);
     disp(['Loading file ' num2str(n)]);
     %load files
-    loadTic = tic
+    loadTic = tic;
     
     [data] = ScanImageTiffReader([filedir IMGFILES(1).name]).data();
     if n ==1;
@@ -103,18 +103,18 @@ for n = 1:length(IMGFILES);
         %extract signals        
         for ro=1:size(Depth{j}.ROIs,2);
                 
-                g_s=mean(mcg(find(Depth{j}.ROIs(:,ro)==1),:));
-                r_s=mean(mcr(find(Depth{j}.ROIs(:,ro)==1),:));
+                g_s=mean(mcg(Depth{j}.ROIs(:,ro)==1,:));
+                r_s=mean(mcr(Depth{j}.ROIs(:,ro)==1,:));
                 
-                g_nps=mean(mcg(find(Depth{j}.NPM(:,ro)==1),:));
-                r_nps=mean(mcr(find(Depth{j}.NPM(:,ro)==1),:));
+                g_nps=mean(mcg(Depth{j}.NPM(:,ro)==1,:));
+                r_nps=mean(mcr(Depth{j}.NPM(:,ro)==1,:));
 
                 
                 Depth{j}.green_data(ro,totalcount+1:totalcount+frame)=g_s;
                 Depth{j}.red_data(ro,totalcount+1:totalcount+frame)=r_s;  
                 
-                Depth{j}.green_npdata(ro,totalcount+1:totalcount+frame)=g_s;
-                Depth{j}.red_npdata(ro,totalcount+1:totalcount+frame)=r_s;     
+                Depth{j}.green_npdata(ro,totalcount+1:totalcount+frame)=g_nps;
+                Depth{j}.red_npdata(ro,totalcount+1:totalcount+frame)=r_nps;     
         end        
 
     
