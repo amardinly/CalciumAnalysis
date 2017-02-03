@@ -1,5 +1,7 @@
 function Signals=extractSignals3D(expName,alignfile,segmentfile,filedir,basename);
 
+debugT = 0; %disables motion correction for debugging
+
 if nargin<5
     basename='';
 end
@@ -69,11 +71,13 @@ fprintf([ num2str(numel(IMGFILES)) ' Files Detected... \n']);
 
 totalcount=0;
 for n = 1:length(IMGFILES);
-    disp(['Loading file ' num2str(n)]);
+    fprintf(['Loading file ' num2str(n) '...']);
     %load files
     loadTic = tic;
     
-    [data] = ScanImageTiffReader([filedir IMGFILES(1).name]).data();
+    [data] = ScanImageTiffReader([filedir IMGFILES(n).name]).data();
+    data = permute(data,[2 1 3]);
+    
     if n ==1;
         MD = ScanImageTiffReader([filedir IMGFILES(1).name]).metadata();
         SI=parseSI5Header(MD);
@@ -94,8 +98,13 @@ for n = 1:length(IMGFILES);
         
         T=Depth{j}.T;
         for frame=1:(size(gi,3));
-        mcg(:,:,frame)=circshift(gi(:,:,frame),T(frame+totalcount,:));
-        mcr(:,:,frame)=circshift(ri(:,:,frame),T(frame+totalcount,:));
+            if debugT == 1
+                mcg(:,:,frame)=gi(:,:,frame);
+                mcr(:,:,frame)=ri(:,:,frame);
+            else
+                mcg(:,:,frame)=circshift(gi(:,:,frame),T(frame+totalcount,:));
+                mcr(:,:,frame)=circshift(ri(:,:,frame),T(frame+totalcount,:));
+            end
         end;  
    
         %save MC mean images in both channels
@@ -136,7 +145,7 @@ for n = 1:length(IMGFILES);
     
     %% update total count
     totalcount=totalcount+(size(gi,3));  %update total count for T vector
-    toc(loadTic)
+    fprintf([' Took ' num2str(toc(loadTic)) 's\n']);
 end
 
 
