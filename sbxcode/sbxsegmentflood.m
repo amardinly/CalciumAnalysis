@@ -22,7 +22,7 @@ function varargout = sbxsegmentflood(varargin)
 
 % Edit the above text to modify the response to help sbxsegmentflood
 
-% Last Modified by GUIDE v2.5 01-Feb-2017 17:08:50
+% Last Modified by GUIDE v2.5 03-Feb-2017 10:25:50
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -102,48 +102,146 @@ function loadbtn_Callback(hObject, eventdata, handles)
         return
     end
     
+    
+    
     axis off
     handles.im = imagesc(0,[0,1]);
     
-    m = double(m);
-    m = (m-min(m(:)))/(max(m(:))-min(m(:)));
+    %get depth from user
+    depth=[];
+    while isempty(depth);
+        depth = inputdlg('Please select depth');
+        depth=str2num(depth{1});   
+    end;
+    %store hi and wi
+    handles.hi=hi{depth};
+    handles.wi=wi{depth};
+    handles.depth=depth;
     
-    try
-        handles.c3 = c3;
-        g = exp(-(-50:50)/2/8^2);
-        g = g/sum(g(:));
-        A = convn(convn(c3,g,'same'),g','same');
-        c3_eq =c3./(.01+A);
-        handles.c3_eq = adapthisteq(c3_eq/max(c3_eq(:)),'NumTiles',[16 16],'Distribution','Exponential');
+    
+    if size(m)~=[512 512]
+        mmm=zeros(512,512);
         
-        %Kurtosis
-        k = min(max(k,0).^.5,20);
-        handles.k = k/max(k(:));
+        m = double(m);
+        m = (m-min(m(:)))/(max(m(:))-min(m(:)));
         
-        sm = bsxfun(@times,sm,1./median(sm))-.5;
-        handles.sm = sm/max(sm(:));
+        mmm(handles.wi,handles.wi)=m;
+        m=mmm;
         
-        A = convn(convn(k,g,'same'),g','same');
-        B = conv2(g,g,ones(size(sm)),'same');
-        A = A./B;
-        A = sqrt(k./(.001+A));
-        A = real(A);
-        handles.k_eq = adapthisteq(A/max(A(:)),'NumTiles',[16 16],'Distribution','Exponential');
         
-        %Max
-        A = conv2(g,g,sm,'same');
-        B = conv2(g,g,ones(size(sm)),'same');
-        A = A./B;
-        A = sm./(.01+A);
-        handles.sm_eq = adapthisteq(A/max(A(:)),'NumTiles',[16 16],'Distribution','Exponential');
+        try
+            c3corr=zeros(512,512);
+            c3corr(handles.wi,handles.wi)=c3;
+            
+            
+            handles.c3 = c3corr;
+            g = exp(-(-50:50)/2/8^2);
+            g = g/sum(g(:));
+            A = convn(convn(c3corr,g,'same'),g','same');
+            c3_eq =c3corr./(.01+A);
+            handles.c3_eq = adapthisteq(c3_eq/max(c3_eq(:)),'NumTiles',[16 16],'Distribution','Exponential');
+            
+            %Kurtosis
+            k = min(max(k,0).^.5,20);
+            kcorr=k/max(k(:));
+            
+            Kcorr=zeros(512,512);
+            Kcorr(handles.wi,handles.wi)=kcorr;
+            
+            
+            handles.k = Kcorr;
+            
+            
+            sm = bsxfun(@times,sm,1./median(sm))-.5;
+            sm=  sm/max(sm(:));
+            
+            smCorr=zeros(512,512);
+            smCorr(handles.wi,handles.wi)=sm;
+            
+            handles.sm =smCorr;
+            
+            A = convn(convn(Kcorr,g,'same'),g','same');
+            B = conv2(g,g,ones(size(smCorr)),'same');
+            A = A./B;
+            A = sqrt(Kcorr./(.001+A));
+            A = real(A);
+            handles.k_eq = adapthisteq(A/max(A(:)),'NumTiles',[16 16],'Distribution','Exponential');
+            
+            %Max
+            A = conv2(g,g,smCorr,'same');
+            B = conv2(g,g,ones(size(smCorr)),'same');
+            A = A./B;
+            A = smCorr./(.01+A);
+            handles.sm_eq = adapthisteq(A/max(A(:)),'NumTiles',[16 16],'Distribution','Exponential');
+            
+            %set(handles.corr,'Value',1);
+            set(handles.histeq,'Value',0);
+            set(handles.corr,'visible','on');
+        catch
+            %set(handles.corr,'Value',0);
+            %set(handles.corr,'visible','off');
+        end
         
-        %set(handles.corr,'Value',1);
-        set(handles.histeq,'Value',0);
-        set(handles.corr,'visible','on');
-    catch
-        %set(handles.corr,'Value',0);
-        %set(handles.corr,'visible','off');
+    else
+        
+        m = double(m);
+        m = (m-min(m(:)))/(max(m(:))-min(m(:)));
+        
+        
+        
+        try
+            
+            
+            handles.c3 = c3;
+            g = exp(-(-50:50)/2/8^2);
+            g = g/sum(g(:));
+            A = convn(convn(c3,g,'same'),g','same');
+            c3_eq =c3./(.01+A);
+            handles.c3_eq = adapthisteq(c3_eq/max(c3_eq(:)),'NumTiles',[16 16],'Distribution','Exponential');
+            
+            %Kurtosis
+            k = min(max(k,0).^.5,20);
+            kcorr=k/max(k(:));
+            
+          
+            
+            handles.k = k;
+            
+            
+            sm = bsxfun(@times,sm,1./median(sm))-.5;
+            sm=  sm/max(sm(:));
+            
+            
+            handles.sm =sm;
+            
+            A = convn(convn(k,g,'same'),g','same');
+            B = conv2(g,g,ones(size(sm)),'same');
+            A = A./B;
+            A = sqrt(k./(.001+A));
+            A = real(A);
+            handles.k_eq = adapthisteq(A/max(A(:)),'NumTiles',[16 16],'Distribution','Exponential');
+            
+            %Max
+            A = conv2(g,g,sm,'same');
+            B = conv2(g,g,ones(size(sm)),'same');
+            A = A./B;
+            A = sm./(.01+A);
+            handles.sm_eq = adapthisteq(A/max(A(:)),'NumTiles',[16 16],'Distribution','Exponential');
+            
+            %set(handles.corr,'Value',1);
+            set(handles.histeq,'Value',0);
+            set(handles.corr,'visible','on');
+        catch
+            %set(handles.corr,'Value',0);
+            %set(handles.corr,'visible','off');
+        end
+        
+        
+        
+        
     end
+    
+    
     handles.m = m;
     handles.dim = size(m);
     handles.m_eq = adapthisteq(handles.m,'NumTiles',[16 16],'Distribution','Exponential');
@@ -193,7 +291,6 @@ function loadbtn_Callback(hObject, eventdata, handles)
     set(handles.im_flood,'visible','off');
     
     guidata(hObject, handles);
-    
     
     
     drawbgim(handles);
@@ -385,6 +482,12 @@ dim = handles.dim;
 %     end
 % end
 
+m=handles.m;
+k=handles.k;
+c3=handles.c3;
+sm=handles.sm;
+
+save([strtok(handles.fn,'.') '.align'],'m','k','c3','sm','-mat','-v7.3','-append');
 save([strtok(handles.fn,'.') '.segment'],'mask','dim','-mat','-v7.3');
 fprintf('Saved segments\n');
 
@@ -413,7 +516,10 @@ drawbgim(handles)
 
 function drawbgim(handles)
     axis(handles.axes1);
-
+   % hold off
+    %set(handles.im,'Cdata',zeros(512,512));
+ 
+    
     thesel = get(handles.corr,'SelectedObject');
     thesel = get(thesel,'Tag');
     if get(handles.histeq,'Value') == 0
@@ -729,3 +835,155 @@ function ffbtn_KeyPressFcn(hObject, eventdata, handles)
 %	Character: character interpretation of the key(s) that was pressed
 %	Modifier: name(s) of the modifier key(s) (i.e., control, shift) pressed
 % handles    structure with handles and user data (see GUIDATA)
+
+
+% --- Executes on button press in stimROIsCB.
+function stimROIsCB_Callback(hObject, eventdata, handles)
+% hObject    handle to stimROIsCB (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+a=handles.axes1.Children;
+
+if get(handles.stimROIsCB,'Value')
+    
+    for j = 1:numel(a);
+        try
+        set(a(j),'Color',[1 0 0 0]);
+        end
+    end;
+else
+    for j = 1:numel(a);
+        try
+        set(a(j),'Color',[1 0 0 1]);
+        end
+    end;
+end
+
+
+
+
+% Hint: get(hObject,'Value') returns toggle state of stimROIsCB
+
+
+% --- Executes on button press in loadROIs.
+function loadROIs_Callback(hObject, eventdata, handles)
+% hObject    handle to loadROIs (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+    handles.start_time = tic;
+   % cla;
+    hold off;
+    zoom off;
+    pan off;
+    set(handles.xraychk,'Value',0);
+    handles.xraypoint = [];
+
+  %  plist = {};
+  %  h = [];
+    
+    [fn,pathname] = uigetfile('*.mat');
+    fn = [pathname fn];
+    
+ 
+    try 
+        load(fn,'-mat');
+    catch
+        return
+    end
+ 
+    i=1;
+    for j = 1:numel(ROIdata.rois);
+        if ROIdata.rois(j).depth==handles.depth;
+            handles.ROIdata.rois(i)=ROIdata.rois(j);
+            i=i+1;
+        end
+    end;
+    
+    
+    axis tight;
+    zoom off;
+    pan off;
+    
+    hold on;
+
+    
+    guidata(hObject, handles);
+    
+    
+    
+    drawbgim(handles);
+    drawfgim(handles);
+    %drawfloodim(handles);
+    
+    refresh_stats(handles)
+    
+     axis(handles.axes1);
+    for j=1:numel(handles.ROIdata.rois);
+        hold on;
+        plot(handles.ROIdata.rois(j).vertices(:,1),handles.ROIdata.rois(j).vertices(:,2),'r');
+    end
+    hold off
+
+
+% --- Executes on button press in loadDAQ.
+function loadDAQ_Callback(hObject, eventdata, handles)
+% hObject    handle to loadDAQ (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+    handles.start_time = tic;
+   % cla;
+    hold off;
+    zoom off;
+    pan off;
+    set(handles.xraychk,'Value',0);
+    handles.xraypoint = [];
+
+  %  plist = {};
+  %  h = [];
+    
+    [fn,pathname] = uigetfile('*.mat');
+    fn = [pathname fn];
+    
+    disp('Loading....this might take a while')
+    try 
+        load(fn,'ExpStruct','-mat');
+    catch
+        return
+    end
+    disp('done loading')
+ 
+    ROIdata=ExpStruct.Holo.ROIdata;
+    i=1;
+    for j = 1:numel(ROIdata.rois);
+        if ROIdata.rois(j).depth==handles.depth;
+            handles.ROIdata.rois(i)=ROIdata.rois(j);
+            i=i+1;
+        end
+    end;
+    
+    
+    axis tight;
+    zoom off;
+    pan off;
+    
+    hold on;
+
+    
+    guidata(hObject, handles);
+    
+    
+    
+    drawbgim(handles);
+    drawfgim(handles);
+    %drawfloodim(handles);
+    
+    refresh_stats(handles)
+    clc
+    
+    axis(handles.axes1);
+    for j=1:numel(handles.ROIdata.rois);
+        hold on;
+        plot(handles.ROIdata.rois(j).vertices(:,1),handles.ROIdata.rois(j).vertices(:,2),'r');
+    end
+    hold off
