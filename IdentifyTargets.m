@@ -22,10 +22,22 @@ targetLoc = cat(1,targetCentroid,targetDepths);
 ROIloc =[];
 for i = 1:numel([signals.Depths])
     for r = 1:size(signals(i).Depths.ROIs,3)
-        loc = [centerOfMass(double(signals(i).Depths.ROIs(:,:,r))) i];
-        ROIloc = cat(2,ROIloc,loc');
+        try
+            loc = [centerOfMass(double(signals(i).Depths.ROIs(:,:,r))) i];
+            locR(1)=loc(2);
+            locR(2)=loc(1);
+            locR(3)=loc(3);
+            
+            ROIloc = cat(2,ROIloc,locR');
+        catch
+            loc=[0;0;1 ];
+            ROIloc = cat(2,ROIloc,loc);
+        end
     end
 end
+
+
+
 
 roiDistance=[];
 for i = 1:size(targetLoc,2)
