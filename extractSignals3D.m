@@ -1,9 +1,12 @@
-function Signals=extractSignals3D(expName,alignfile,segmentfile,filedir,basename);
-
+function Signals=extractSignals3D(expName,alignfile,segmentfile,filedir,basename,phaseAdjust);
+savemeanimg=0;
 debugT = 0; %disables motion correction for debugging
 
 if nargin<5
     basename='';
+    phaseAdjust=[];
+elseif nargin<6;
+    phaseAdjust= [];
 end
 
 
@@ -95,7 +98,7 @@ for n = 1:length(IMGFILES);
     for j=1:numel(Depth);
        gi=g(:,:,j:(numel(Depth)):end); %exptract depth information
        ri=r(:,:,j:(numel(Depth)):end);
-        
+        nframes=size(gi,3);
         T=Depth{j}.T;
         for frame=1:(size(gi,3));
             if debugT == 1
@@ -106,12 +109,24 @@ for n = 1:length(IMGFILES);
                 mcr(:,:,frame)=circshift(ri(:,:,frame),T(frame+totalcount,:));
             end
         end;  
-   
+        clear gi ri;
+        
+        
+        if ~isempty(phaseAdjust);
+            for q=1:size(mcg,3);
+            mcg(:,:,q)=adjustPhase(mcg(:,:,q),phaseAdjust(j,1),phaseAdjust(j,2),0);
+            mcr(:,:,q)=adjustPhase(mcr(:,:,q),phaseAdjust(j,1),phaseAdjust(j,2),0);
+            end
+         end
+        
+        if savemeanimg
         %save MC mean images in both channels
         Depth{j}.meanGreen(:,:,n)=(mean(mcg,3));
         Depth{j}.meanRed(:,:,n)=(mean(mcr,3));
+        end
    
-   
+        
+        
         %vectorize
         mcg=reshape(mcg,[512*512 frame]);
         mcg=double(mcg);
@@ -144,7 +159,7 @@ for n = 1:length(IMGFILES);
     
     
     %% update total count
-    totalcount=totalcount+(size(gi,3));  %update total count for T vector
+    totalcount=totalcount+(nframes);  %update total count for T vector
     fprintf([' Took ' num2str(toc(loadTic)) 's\n']);
 end
 

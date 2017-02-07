@@ -1,9 +1,11 @@
-function [targetROI, targetDistance] = IdentifyTargets(ROIinfo,signals)
+function [targetROI, targetDistance] = IdentifyTargets(ROIinfo,signals,plotopt)
 %function takes either a path to an ROI file or ROIdata directly and
 %the signals output from extract signals and returns a list of ROI
 %indexes that are closest to the targets stimulated in ROIdata as well
 %as the euclidean distance.
-
+if nargin<3;
+    plotopt=0;
+end
 
 if isstruct(ROIinfo)
     ROIdata = ROIinfo;
@@ -52,3 +54,15 @@ for i = 1:size(targetLoc,2)
 end
 
 [targetDistance, targetROI] = min(roiDistance,[],2);
+
+
+if plotopt
+    for j=1:numel(signals)
+        
+    subplot(1,numel(signals),j)
+    imagesc(uint8(sum(signals(1).Depths.ROIs,3)))
+    hold on
+   scatter(ROIloc(1,find(targetLoc(3,:)==j)),ROIloc(2,find(targetLoc(3,:)==j)),'r')
+    axis square
+    end
+end
