@@ -56,7 +56,7 @@ for f=1:numel(fn);
     
     for n = 1:length(theseIMGFILES);
         
-        totalcount = (Exp.trialtype.(fn{1})(n) * Exp.FPT)-Exp.FPT; %find start of the translation matrix
+        totalcount = (Exp.trialtype.(fn{f})(n) * Exp.FPT)-Exp.FPT; %find start of the translation matrix
         
         fprintf(['Loading file ' num2str(n) '...']);
         %load files
@@ -117,7 +117,7 @@ for f=1:numel(fn);
     %make dff movie
     for u=1:numel(Signals);
     m=reshape(AvgMovie{u},[size(AvgMovie{u},1)*size(AvgMovie{u},2) size(AvgMovie{u},3)]);
-    Fo = mean(m(:,1:floor(Exp.stimtimes(1)*Exp.FPS)),2);
+    Fo = prctile(m,10);
     dff=bsxfun(@minus,m,Fo);
     dff=bsxfun(@rdivide,dff,Fo);
     AvgDFFmov{u}=reshape(dff,size(AvgMovie{u}));

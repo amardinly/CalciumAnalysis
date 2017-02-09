@@ -3,14 +3,14 @@ function Data=generatePlots(Signals,Data,Exp,theseROIs,opts)
 %specifify default options
 if nargin<5
     opts.smofactor=3;  %smoothing factoors
-    opts.bl=0;         % base line -1 or 0
-    opts.blt='start';  %baseline type 'start' or 'stim'  (5 frames pre stime is baseline)
+    opts.bl=1;         % base line -1 or 0
+    opts.blt='stim';  %baseline type 'start' or 'stim'  (5 frames pre stime is baseline)
     opts.ploterr=1;    %plot 95% CI or mean only (1/0)
     opts.plotstim=0;   %plot the holographic stimuli (1/0)
     opts.xyview='stim';%plot the full sweep or only the area around the stim ('full or 'stim')
-    opts.savefigs=0;   %save figures (1/0);
-    opts.zscore=1;     %zscore figure?
-    opts.plotshow = 0; %
+    opts.savefigs=1;   %save figures (1/0);
+    opts.zscore=0;     %zscore figure?
+    opts.plotshow = 1; %
 end
 
 if nargin<4;
@@ -43,8 +43,14 @@ for Q = 1:length(theseROIs);   %For each ROI specified in the input;
                 %plot presetime baseline if ROI is targeted, else plot normal baseline
                 [i1 i2 i3]=intersect(roi,Exp.targetROI);  %find if this roi is a target rois
                 if ~isempty(i1); %if so
-                    
-                    baseline=floor(Exp.stimtimes(i3,1)*Exp.FPS)-2:floor(Exp.stimtimes(i3,1)*Exp.FPS)-1;  %baseline is the frame before stim comes on
+                    %find where this Roi is targeted
+                    foundStim=[]; uu=1;
+                    while isempty(foundStim) && uu< length(Exp.stimROIs);
+                    [foundStim a1 a2]=intersect(i3,Exp.stimROIs(uu).rois);
+                    uu=uu+1;
+                    end;
+                    uu=uu-1;
+                    baseline=floor(Exp.stimtimes(uu,1)*Exp.FPS)-2:floor(Exp.stimtimes(uu,1)*Exp.FPS)-1;  %baseline is the frame before stim comes on
                     
                 else
                     baseline=[1:floor(Exp.stimtimes(1)*Exp.FPS)];  %baseline is the begining of the traces
