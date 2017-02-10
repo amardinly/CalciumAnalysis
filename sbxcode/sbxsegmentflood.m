@@ -523,8 +523,8 @@ k=handles.k;
 c3=handles.c3;
 sm=handles.sm;
 
-save([strtok(handles.fn,'.') '.align'],'m','k','c3','sm','-mat','-v7.3','-append');
-save([strtok(handles.fn,'.') '.segment'],'mask','dim','-mat','-v7.3');
+save(handles.fn,'m','k','c3','sm','-mat','-v7.3','-append');
+save([handles.fn(1:end-6) '.segment'],'mask','dim','-mat','-v7.3');
 fprintf('Saved segments\n');
 
 
