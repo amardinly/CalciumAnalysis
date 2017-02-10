@@ -125,13 +125,13 @@ function loadbtn_Callback(hObject, eventdata, handles)
         m = double(m);
         m = (m-min(m(:)))/(max(m(:))-min(m(:)));
         
-        mmm(handles.wi,handles.wi)=m;
+        mmm(handles.hi,handles.wi)=m;
         m=mmm;
         
         
         try
             c3corr=zeros(512,512);
-            c3corr(handles.wi,handles.wi)=c3;
+            c3corr(handles.hi,handles.wi)=c3;
             
             
             handles.c3 = c3corr;
@@ -146,7 +146,7 @@ function loadbtn_Callback(hObject, eventdata, handles)
             kcorr=k/max(k(:));
             
             Kcorr=zeros(512,512);
-            Kcorr(handles.wi,handles.wi)=kcorr;
+            Kcorr(handles.hi,handles.wi)=kcorr;
             
             
             handles.k = Kcorr;
@@ -156,7 +156,7 @@ function loadbtn_Callback(hObject, eventdata, handles)
             sm=  sm/max(sm(:));
             
             smCorr=zeros(512,512);
-            smCorr(handles.wi,handles.wi)=sm;
+            smCorr(handles.hi,handles.wi)=sm;
             
             handles.sm =smCorr;
             
@@ -246,14 +246,50 @@ function loadbtn_Callback(hObject, eventdata, handles)
     handles.dim = size(m);
     handles.m_eq = adapthisteq(handles.m,'NumTiles',[16 16],'Distribution','Exponential');
     handles.xraypoint = [];
+    
     try
         if isa(xray,'int16');
             xray = single(xray)/2^15;
         end
-        handles.xray = xray;
+        
+        
+        if size(xray,1)~=256;
+            
+            xray0=zeros(256,256,size(xray,3),size(xray,4));
+            
+            Xrows=handles.hi/2; %rows
+            if ~mod(Xrows(1),1);
+                Xrows=Xrows(1:2:end);
+            else
+                Xrows=Xrows(2:2:end);
+            end
+           
+            XCol=handles.wi/2; %columns
+            if ~mod(XCol(1),1);
+                XCol=XCol(1:2:end);
+            else
+                XCol=XCol(2:2:end);
+            end
+            
+            %IF we notice off by one error, this can be 1:end-1.  I coudlnt
+            %detect a visual difference
+            xray0(Xrows(2:end),XCol(2:end),:,:)=xray;
+        else
+            xray0=xray;
+            
+        end
+        
+        
+        
+        
+        
+        
+        
+        handles.xray = xray0;
     catch
         handles.xray = [];
     end
+    
     set(handles.xraychk,'visible','off');
     set(handles.xraychk,'value',0);
     set(handles.histeq,'visible','on');
@@ -562,20 +598,20 @@ function drawbgim(handles)
     axis off;
     
 function theim = pastexrayintoim(theim,handles)
-    sz = size(handles.xray,3);
-    thefactor = round(size(theim,2)/size(handles.xray,2));
+    sz = size(handles.xray,3); %sz=size of the cov window
+    thefactor = round(size(theim,2)/size(handles.xray,2)); %thefactor = downsample factor
 
-    handles.xraypoint = max(handles.xraypoint,1);
+    handles.xraypoint = max(handles.xraypoint,1);  %center point
     handles.xraypoint(1) = min(handles.xraypoint(1),size(theim,2));
     handles.xraypoint(2) = min(handles.xraypoint(2),size(theim,1));
     dx = -floor(handles.xraypoint(2:-1:1)/thefactor)*thefactor+sz*thefactor/2;
     dx(1) = dx(1) - 1;
-    dx(2) = dx(2) - 1;
+    dx(2) = dx(2) - 1;  %dx is a delta shift
     theim0 = theim;
-    theim = circshift(theim,dx);
+    theim = circshift(theim,dx); %circshift  the image to get the 35x35 sample in the top left
 
     R = squeeze(handles.xray(max(floor(handles.xraypoint(2)/thefactor),1),...
-                             max(floor(handles.xraypoint(1)/thefactor),1),:,:));
+                             max(floor(handles.xraypoint(1)/thefactor),1),:,:)); %extract the proper cov matrix
     if thefactor == 2
         R2 = zeros(size(R,1)*2-1,size(R,2)*2-1);
         R2(1:2:end,1:2:end) = R;
@@ -664,12 +700,17 @@ end
 
 function B = computefloodim(handles)
     if isempty(handles.xray)
+     
+        
+        
         theim = handles.m;
         thecen = round(handles.floodcenter);
     else
+        
         theim = zeros(size(handles.m));
         theim = pastexrayintoim(theim,handles);
         thecen = round(handles.floodcenter(2:-1:1));
+    
     end
     
     [~,B] = regiongrowing(theim,thecen(1),thecen(2),nnz(theim(:)));
